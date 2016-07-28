@@ -7,6 +7,8 @@
 #include <vtkImageData.h>
 #include <vtkXMLImageDataWriter.h>
 
+#include "kernels.h"
+
 using namespace std;
 
 void tovtk(const char path[],
@@ -83,15 +85,13 @@ void doit(const float dz,
 	  float output[])
 {
     const float a = -dz;
-    
-    const int xpmin = *min_element(xp, xp + np);
-    const int xpmax = *max_element(xp, xp + np);
-    
-    const int xpext = max(xpmax, -xpmin);
-    printf("xpath extent: %d [%d %d]\n", xpext, xpmin, xpmax);
+
+    const int xpend = xp[np - 1];
+    const int xpext = 1 + abs(xpend);
+    printf("xpath extent: %d [%d %d]\n", xpext, 0, xpend);
     assert(xpext > 0);
 
-    const int M = xpext + NX + 1;
+    const int M = xpext + NX;
     printf("total dofs: %d\n", M);
     
     float * b = new float[M];
@@ -112,10 +112,13 @@ void doit(const float dz,
 	float * oline = output + NX * y0;
 
 	int ctr = 0;
-	//printf("x0: %d-> %d\n", x0, x0 - xpext);
+	printf("x0: %d -> %d\n", x0, x0 - xpend);
+#if 1
+	scan(x0 - xpend, hline, a * length, writable, b, M, oline, NX);
+#else
 	for(int j = 0; j < M; ++j)
 	{
-	    const int x = j + x0 - xpext;
+	    const int x = j + x0 - xpend;
 	    
 	    if (x >= 0 && x < NX)
 	    {
@@ -129,8 +132,9 @@ void doit(const float dz,
 		    b[j] = hline[x] - a * length ;
     	    }
 	}
+	printf("ctr: %d\n", ctr);
 	assert(ctr == NX);
-	//printf("ctr: %d\n", ctr);
+#endif
 	//exit(0);
     }
     
