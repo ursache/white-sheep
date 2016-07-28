@@ -9,22 +9,27 @@ void scan(
     float * const output,
     const int noutput)
 {
-    for(int j = 0; j < nstates; ++j)
+    const int p0 = -bias;
+    const int p1 = noutput - bias;
+
+    const int s = p0 < p1 ? p0 : p1;
+    const int e = p0 + p1 - s;
+    const int n = e - s;
+    
+    for(int i = 0; i < n; ++i)
     {
+	const int j = s + i;
 	const int x = j + bias;
 	
-	if (x >= 0 && x < noutput)
-	{
-	    const float h = height[x];
+	const float h = height[x];
 	    
-	    const bool p = h > alength + states[j];
-	    
-	    if (write)
-		output[x] = p;
+	const bool p = h > alength + states[j];
 	
-	    if (p)
-		states[j] = h - alength;
-	}
+	if (write)
+	    output[x] = p;
+	
+	if (p)
+	    states[j] = h - alength;
     }
 }
     
