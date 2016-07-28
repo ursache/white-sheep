@@ -9,10 +9,12 @@ int main()
     float h[N];//height field
 
     for(int i = 0; i < N; ++i)
-	h[i] = 30 * (fabs(i - 25) < 10 || (fabs(i - 75) < 10));
+	h[i] = (sin(0.1 * i + 0.4)* .5 + .5)* 20 + 6 * (.7 + cos(3.14 / 10 * i * i * .01)); 
+	
+	//30 * (fabs(i - 25) < 10 || (fabs(i - 75) < 10));
 
 
-    const float dz = tan(35 * M_PI / 180.);
+    const float dz = tan(55 * M_PI / 180.);
 
     float o[N];//output
 
