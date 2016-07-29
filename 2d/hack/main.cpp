@@ -206,7 +206,14 @@ int main()
 		 h, NX, NY, output);
 
 	const int64_t cycles_end = rdtsc();
-	printf("cycles: %.2e\n", (cycles_end - cycles_start) * 1. / ntimes);
+
+	const size_t fpall = (NX * NY * 2 + /*reading and writing the states */2 * NX * NY) * sizeof(float);
+	const size_t fpout = (NX * NY) * sizeof(float);
+	const double cycles = (cycles_end - cycles_start) * 1. / ntimes;
+	printf("\x1b[92mTTS: %.2e\n"
+	       "BW: %.2f B/C\n"
+	       "TH: %.2f B/C\x1b[0m\n",
+	       cycles, fpall / cycles, fpout / cycles);
 
 	memset(output, 0xff, NX * NY * sizeof(float));
     }
