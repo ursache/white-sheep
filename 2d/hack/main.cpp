@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cassert>
+#include <cinttypes>
 
 #include <algorithm>
 #include <vector>
@@ -149,6 +150,13 @@ void doit(const float dz,
     delete [] b;
 }
 
+uint64_t rdtsc() 
+{
+    unsigned int lo, hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}
+
 int main()
 {
     const int NX = 423, NY = 288;
@@ -186,6 +194,23 @@ int main()
     float * output = new float[NX * NY];
     memset(output, 0xff, NX * NY * sizeof(float));
 
+    bool profile = true;
+
+    if (profile)
+    {
+	const int64_t cycles_start = rdtsc();
+
+	const int ntimes = 100;
+	for(int i = 0; i < 100; ++i)
+	    doit(dz, &xpath.front(), &ypath.front(), -1 + (int)xpath.size(),
+		 h, NX, NY, output);
+
+	const int64_t cycles_end = rdtsc();
+	printf("cycles: %.2e\n", (cycles_end - cycles_start) * 1. / ntimes);
+
+	memset(output, 0xff, NX * NY * sizeof(float));
+    }
+    
     doit(dz, &xpath.front(), &ypath.front(), -1 + (int)xpath.size(),
 	 h, NX, NY, output);
 
