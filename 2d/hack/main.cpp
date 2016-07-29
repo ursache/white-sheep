@@ -49,7 +49,6 @@ void tovtk(const char path[],
     imageData->Delete();
 }
 
-
 float * terrain(const int NX, const int NY)
 {
     float * h = new float[NX * NY];
@@ -88,11 +87,8 @@ void doit(const float dz,
 
     const int xpend = xp[np - 1];
     const int xpext = 1 + abs(xpend);
-    printf("xpath extent: %d [%d %d]\n", xpext, 0, xpend);
-    assert(xpext > 0);
 
-    const int M = xpext + NX;
-    printf("total dofs: %d\n", M);
+    const int M = xpext + NX; //number of states
     
     float * b = new float[M];
     memset(b, 0, sizeof(*b) * M);
@@ -101,21 +97,17 @@ void doit(const float dz,
     {
 	const int x0 = xp[ip]; 
 	const int y0 = yp[ip];
-
-	bool writable = ip == 0 || yp[ip - 1] != yp[ip];
-	
-	printf("x0: %d y0: %d\n", x0, y0);
-	
 	const float length = sqrt(pow((float)x0, 2) + pow((float)y0, 2));
-
+	const bool writable = ip == 0 || yp[ip - 1] != yp[ip];
+	
 	const float * hline = h + NX * y0;
 	float * oline = output + NX * y0;
-
-	int ctr = 0;
-	printf("x0: %d -> %d\n", x0, x0 - xpend);
+	
 #if 1
-	scan(x0 - xpend, hline, a * length, writable, b, M, oline, NX);
+	scan(x0 - max(0, xpend), hline, a * length, writable, b, M, oline, NX);
 #else
+	int ctr = 0;
+	
 	for(int j = 0; j < M; ++j)
 	{
 	    const int x = j + x0 - xpend;
@@ -126,16 +118,15 @@ void doit(const float dz,
 		const bool evalpred = hline[x] > a * length + b[j];
 
 		if (writable)
-		    oline[x] = evalpred;//j/10;// evalpred;
+		    oline[x] = evalpred;//if we output "j/10" we'll see the rays
 	
 		if (evalpred)
 		    b[j] = hline[x] - a * length ;
     	    }
 	}
-	printf("ctr: %d\n", ctr);
+
 	assert(ctr == NX);
 #endif
-	//exit(0);
     }
     
     delete [] b;
@@ -147,12 +138,11 @@ int main()
 
     float * h = terrain(NX, NY);
     tovtk("terrain.vti", h, 0, 0, 0, NX, NY, 1);
-    
-    
-    float alpha = (90 - 35) * M_PI / 180.;
+        
+    float alpha = (90 + 20) * M_PI / 180.;
     float gamma = 15 * M_PI / 180.;
 
-    //alpha = (float)max(-0.25 * M_PI, min(0.25 * M_PI, (double)alpha));
+    alpha = (float)max(0.25 * M_PI, min(0.75 * M_PI, (double)alpha));
 
     const float dx = cos(alpha);
     const float dy = sin(alpha);
@@ -183,6 +173,7 @@ int main()
 	 h, NX, NY, output); 
 
     tovtk("output.vti", output, 0, 0, 0, NX, NY, 1);
+    
     delete [] output;
     delete [] h;
 

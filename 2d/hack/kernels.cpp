@@ -19,7 +19,7 @@ void scan(
     for(int i = 0; i < n; ++i)
     {
 	const int j = s + i;
-	const int x = j + bias;
+	const int x = s + bias + i;
 	
 	const float h = height[x];
 	    
