@@ -49,7 +49,8 @@ void tovtk(const char path[],
     imageData->Delete();
 }
 
-float * terrain(const int NX, const int NY)
+float * terrain(const int NX,
+		const int NY)
 {
     float * h = new float[NX * NY];
 
@@ -89,37 +90,53 @@ void doit(const float dz,
     const int xpext = 1 + abs(xpend);
 
     const int M = xpext + NX; //number of states
-    
+
     float * b = new float[M];
     memset(b, 0, sizeof(*b) * M);
 
     for(int ip = 0; ip < np; ++ip)
     {
-	const int x0 = xp[ip]; 
+	const int x0 = xp[ip];
 	const int y0 = yp[ip];
 	const float length = sqrt(pow((float)x0, 2) + pow((float)y0, 2));
-	const bool writable = ip == 0 || yp[ip - 1] != yp[ip];
-	
+	const bool write = ip == 0 || yp[ip - 1] != yp[ip];
+
 	const float * hline = h + NX * y0;
 	float * oline = output + NX * y0;
-	
+
 #if 1
-	scan(x0 - max(0, xpend), hline, a * length, writable, b, M, oline, NX);
+	{
+	    const int offset = x0 - max(0, xpend);
+
+	    const int p0 = -offset;
+	    const int p1 = NX - offset;
+	    const int s = p0 < p1 ? p0 : p1;
+	    const int e = p0 + p1 - s;
+	    const int n = e - s;
+
+	    const float bias = a * length;
+
+	    const float * const __restrict__ hptr = hline + s + offset;
+	    float * const __restrict__ optr = oline + s + offset;
+	    float * const __restrict__ sptr = b + s;
+
+	    scan_kernel(write, n, a * length, hptr, optr, sptr);
+	}
 #else
 	int ctr = 0;
-	
+
 	for(int j = 0; j < M; ++j)
 	{
-	    const int x = j + x0 - xpend;
-	    
+	    const int x = j + x0 - max(0, xpend);
+
 	    if (x >= 0 && x < NX)
 	    {
 		++ctr;
 		const bool evalpred = hline[x] > a * length + b[j];
 
-		if (writable)
+		if (write)
 		    oline[x] = evalpred;//if we output "j/10" we'll see the rays
-	
+
 		if (evalpred)
 		    b[j] = hline[x] - a * length ;
     	    }
@@ -128,7 +145,7 @@ void doit(const float dz,
 	assert(ctr == NX);
 #endif
     }
-    
+
     delete [] b;
 }
 
@@ -138,9 +155,9 @@ int main()
 
     float * h = terrain(NX, NY);
     tovtk("terrain.vti", h, 0, 0, 0, NX, NY, 1);
-        
-    float alpha = (90 + 20) * M_PI / 180.;
-    float gamma = 15 * M_PI / 180.;
+
+    float alpha = (90 + 45) * M_PI / 180.;
+    float gamma = 65 * M_PI / 180.;
 
     alpha = (float)max(0.25 * M_PI, min(0.75 * M_PI, (double)alpha));
 
@@ -149,7 +166,7 @@ int main()
     const float dz = tan(gamma);
 
     std::vector<int> xpath, ypath;
-    
+
     {
 	 int iter = 0, xp, yp;
 
@@ -158,22 +175,22 @@ int main()
 	 {
 	     xp = round(iter * dx);
 	     yp = round(iter * dy);
-	     xpath.push_back(xp);	
+	     xpath.push_back(xp);
 	     ypath.push_back(yp);
 
 	     ++iter;
 	 }
 	 while (xp < NX && yp < NY);
     }
-    
+
     float * output = new float[NX * NY];
     memset(output, 0xff, NX * NY * sizeof(float));
 
     doit(dz, &xpath.front(), &ypath.front(), -1 + (int)xpath.size(),
-	 h, NX, NY, output); 
+	 h, NX, NY, output);
 
     tovtk("output.vti", output, 0, 0, 0, NX, NY, 1);
-    
+
     delete [] output;
     delete [] h;
 

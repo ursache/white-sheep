@@ -1,11 +1,10 @@
+#pragma once
+
 extern "C"
-void scan(
-    const int bias,
-    const float * const height,
-    const float alength,
+void scan_kernel(
     const bool write,
-    float * const states,
-    const int nstates,
-    float * const output,
-    const int noutput);
-    
+    const int n,
+    const float bias,
+    const float * const __restrict__ height,
+    float * const __restrict__ output,
+    float * const __restrict__ states);
